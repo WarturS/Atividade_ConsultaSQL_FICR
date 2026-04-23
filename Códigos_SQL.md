@@ -66,5 +66,119 @@ FROM ingestao_agua;
 
 - ROUND (Arredonda o valor decimal).
 
-## E-mail do professor: dario.nascimento@p.ficr.edu.br
+## 📅 Análise por Dia 
+
+### 11- Quanto cada usuário bebeu? 
+SELECT 
+    usuario_id,
+    data,
+    total_ml
+FROM resumo_diario_agua
+ORDER BY data, usuario_id;
+
+### 12 - Qual foi o dia com maior consumo total de água?
+SELECT 
+    DATE(data_hora) AS data,
+    SUM(quantidade_ml) AS total_ml
+FROM ingestao_agua
+GROUP BY DATE(data_hora)
+ORDER BY total_ml DESC
+LIMIT 1;
+
+### 13 - Qual foi o dia com menor consumo total?
+SELECT 
+    DATE(data_hora) AS data,
+    SUM(quantidade_ml) AS total_ml
+FROM ingestao_agua
+GROUP BY DATE(data_hora)
+ORDER BY total_ml ASC
+LIMIT 1;
+
+### 14 - Quantos registros de ingestão existem por dia?
+SELECT 
+    DATE(data_hora) AS data,
+    COUNT(*) AS total_registros
+FROM ingestao_agua
+GROUP BY DATE(data_hora)
+ORDER BY data;
+
+## 🎯 Metas 
+
+### 15 - Qual usuário atingiu a meta diária em cada dia?
+SELECT 
+    r.usuario_id,
+    r.data,
+    r.total_ml,
+    m.meta_ml,
+    (r.total_ml >= m.meta_ml) AS atingiu_meta
+FROM resumo_diario_agua r
+JOIN metas_diarias m 
+    ON r.usuario_id = m.usuario_id 
+    AND r.data = m.data;
+
+### 16 - Quantos dias cada usuário bateu a meta?
+SELECT 
+    r.usuario_id,
+    COUNT(*) AS dias_meta_atingida
+FROM resumo_diario_agua r
+JOIN metas_diarias m 
+    ON r.usuario_id = m.usuario_id 
+    AND r.data = m.data
+WHERE r.total_ml >= m.meta_ml
+GROUP BY r.usuario_id
+ORDER BY dias_meta_atingida DESC;
+
+### 17 - Qual a porcentagem da meta atingida por dia por usuário?
+SELECT 
+    r.usuario_id,
+    r.data,
+    r.total_ml,
+    m.meta_ml,
+    ROUND((r.total_ml * 100.0 / m.meta_ml), 2) AS percentual_meta
+FROM resumo_diario_agua r
+JOIN metas_diarias m 
+    ON r.usuario_id = m.usuario_id 
+    AND r.data = m.data;
+
+### 18 - Qual usuário tem melhor desempenho (mais dias com meta atingida)?
+SELECT 
+    r.usuario_id,
+    COUNT(*) AS dias_meta_atingida
+FROM resumo_diario_agua r
+JOIN metas_diarias m 
+    ON r.usuario_id = m.usuario_id 
+    AND r.data = m.data
+WHERE r.total_ml >= m.meta_ml
+GROUP BY r.usuario_id
+ORDER BY dias_meta_atingida DESC
+LIMIT 1;
+
+## 🧠Inteligência/Produto
+
+### 19 - Em quais horários ocorre maior consumo de água?
+SELECT 
+    EXTRACT(HOUR FROM data_hora) AS hora,
+    SUM(quantidade_ml) AS total_ml
+FROM ingestao_agua
+GROUP BY hora
+ORDER BY total_ml DESC
+;
+
+### 20 - Qual o intervalo médio entre ingestões por usuário?
+SELECT 
+    usuario_id,
+    AVG(intervalo) AS intervalo_medio
+FROM (
+    SELECT 
+        usuario_id,
+        data_hora,
+        data_hora - LAG(data_hora) OVER (
+            PARTITION BY usuario_id 
+            ORDER BY data_hora
+        ) AS intervalo
+    FROM ingestao_agua
+) sub
+WHERE intervalo IS NOT NULL
+GROUP BY usuario_id;
+
 
